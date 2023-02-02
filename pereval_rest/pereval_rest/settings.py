@@ -83,10 +83,10 @@ DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
         'NAME': 'pereval',
-        'USER': os.environ.get('DB_USER'),
-        'PASSWORD': os.environ.get('DB_PASSWORD'),
-        'HOST': os.environ.get('DB_HOST'),
-        'PORT': os.environ.get('DB_PORT'),
+        'USER': os.environ.get('FSTR_DB_LOGIN'),
+        'PASSWORD': os.environ.get('FSTR_DB_PASS'),
+        'HOST': os.environ.get('FSTR_DB_HOST'),
+        'PORT': os.environ.get('FSTR_DB_PORT'),
     }
 }
 
