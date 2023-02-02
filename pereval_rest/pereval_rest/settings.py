@@ -43,6 +43,7 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'mobile_rest'
 ]
 
 MIDDLEWARE = [
@@ -77,10 +78,6 @@ WSGI_APPLICATION = 'pereval_rest.wsgi.application'
 
 # Database
 # https://docs.djangoproject.com/en/4.1/ref/settings/#databases
-
-
-# logg_django.warning(f'------------- env {os.environ}')
-logg_django.warning(f'------------- get {os.environ.get("DB_USER")}')
 
 DATABASES = {
     'default': {
