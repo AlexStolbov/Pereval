@@ -34,7 +34,9 @@ class PerevalAdded(models.Model):
     """
     Данные о прохождении перевалов, присланные туристами.
     """
+    # Сырые данные, переданные туристом.
     row_data = models.JSONField()
+    # Дата и время загрузки в базу.
     add_data = models.DateTimeField()
     # по email подбирается существующий, или создается новый
     tourist = models.ForeignKey(Tourist, null=True, on_delete=models.SET_NULL)
@@ -63,4 +65,5 @@ class PerevalAdded(models.Model):
 
 class Images(models.Model):
     pereval_added = models.ForeignKey(PerevalAdded, on_delete=models.CASCADE)
+    title = models.CharField(max_length=100, default='')
     image = models.BinaryField()
