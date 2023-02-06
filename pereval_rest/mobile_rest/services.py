@@ -1,6 +1,7 @@
 import logging
 import json
 import datetime
+from enum import Enum
 from .models import Tourist, PerevalAdded, Images
 
 logger_one = logging.getLogger('debug_one')
@@ -34,6 +35,11 @@ class PerevalDataControl:
         self.new_id = 0
         super().__init__()
 
+    class ResultCode(Enum):
+        OperationError = '500'
+        BadRequest = '400'
+        Success = '200'
+
     def check_data(self):
         """
         Проверка наличия всех полей
@@ -50,7 +56,7 @@ class PerevalDataControl:
         data_keys = set(self.data_in_decoded.keys())
         missing_keys = control_keys.difference(data_keys)
         if missing_keys:
-            self.status = 400,
+            self.status = self.ResultCode.BadRequest.value,
             self.message = f"Bad Request. Missing keys {missing_keys}"
             self.new_id = 'null'
             return False
@@ -86,7 +92,7 @@ class PerevalDataControl:
 
         self.save_images(new_pereval, self.data_in_decoded["images"])
 
-        self.status = 200,
+        self.status = self.ResultCode.Success.value,
         self.message = "Успех"
         self.new_id = new_pereval.id
 
