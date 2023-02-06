@@ -1,3 +1,4 @@
+from enum import Enum
 from django.db import models
 
 
@@ -56,11 +57,14 @@ class PerevalAdded(models.Model):
     pereval_areas = models.ForeignKey(PerevalAreas,
                                       null=True,
                                       on_delete=models.SET_NULL)
-    # new;
-    # pending — если модератор взял в работу;
-    # accepted — модерация прошла успешно;
-    # rejected — модерация прошла, информация не принята.
+    # Moderation status
     status = models.CharField(max_length=10)
+
+    class ModerationStatus(Enum):
+        New = 'new'
+        Pending = 'pending'  # модератор взял в работу;
+        Accepted = 'accepted'  # модерация прошла успешно;
+        Rejected = 'rejected'  # модерация прошла, информация не принята.
 
 
 class Images(models.Model):

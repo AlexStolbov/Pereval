@@ -81,7 +81,7 @@ class PerevalDataControl:
         new_pereval.spring_level = level['spring']
         new_pereval.summer_level = level['summer']
         new_pereval.autumn_level = level['autumn']
-
+        new_pereval.status = PerevalAdded.ModerationStatus.New.value
         new_pereval.save()
 
         self.save_images(new_pereval, self.data_in_decoded["images"])
