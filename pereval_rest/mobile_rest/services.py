@@ -3,6 +3,9 @@ import json
 import datetime
 from enum import Enum
 from .models import Tourist, PerevalAdded, Images
+import io
+from rest_framework.parsers import JSONParser
+from .serializers import PerevalSerializers
 
 logger_one = logging.getLogger('debug_one')
 
@@ -33,6 +36,7 @@ class PerevalDataControl:
         self.status = 0
         self.message = ''
         self.new_id = 0
+        self.serializer = PerevalSerializers()
         super().__init__()
 
     class ResultCode(Enum):
@@ -44,22 +48,18 @@ class PerevalDataControl:
         """
         Проверка наличия всех полей
         """
-        control_keys = {"beauty_title",
-                        "title",
-                        "other_titles",
-                        "connect",
-                        "add_time",
-                        "user",
-                        "level",
-                        "images"}
-        self.data_in_decoded = json.loads(self.data_in_raw)
-        data_keys = set(self.data_in_decoded.keys())
-        missing_keys = control_keys.difference(data_keys)
-        if missing_keys:
+        stream = io.BytesIO(bytes(self.data_in_raw))
+        data = JSONParser().parse(stream)
+        serializer = PerevalSerializers(data=data)
+        logger_one.info(f'serialize {serializer.is_valid()}')
+        logger_one.info(f'serialize err {serializer.errors}')
+        logger_one.info(f'serialize vd {serializer.validated_data}')
+        if not serializer.is_valid():
             self.status = self.ResultCode.BadRequest.value,
-            self.message = f"Bad Request. Missing keys {missing_keys}"
+            self.message = f"Bad Request. {serializer.errors}"
             self.new_id = 'null'
             return False
+        self.data_in_decoded = serializer.validated_data
         return True
 
     def submit_data(self):
@@ -68,7 +68,7 @@ class PerevalDataControl:
         """
 
         new_pereval = PerevalAdded()
-        new_pereval.row_data = json.dumps(self.data_in_decoded)
+        new_pereval.row_data = self.serializer.data
         new_pereval.add_data = datetime.datetime.now()
 
         sender = self.data_in_decoded['user']
@@ -124,7 +124,7 @@ class PerevalDataControl:
             new_image.pereval_added = pereval
             new_image.title = image['title']
             image_in = image['data']
-            logger_one.info(f'save images {type(image_in)}')
+            # logger_one.info(f'save images {type(image_in)}')
             if type(image_in) == str:
                 image_to_save = bytes(image_in, 'utf-8')
             else:
