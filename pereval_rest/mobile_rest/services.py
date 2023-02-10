@@ -1,11 +1,11 @@
+import io
 import logging
-import json
 import datetime
 from enum import Enum
-from .models import Tourist, PerevalAdded, Images
-import io
 from rest_framework.parsers import JSONParser
-from .serializers import PerevalSerializers
+from rest_framework.renderers import JSONRenderer
+from .models import Tourist, PerevalAdded, Images
+from .serializers import LoadDataPerevalSerializer, PerevalTransform
 
 logger_one = logging.getLogger('debug_one')
 
@@ -36,7 +36,7 @@ class PerevalDataControl:
         self.status = 0
         self.message = ''
         self.new_id = 0
-        self.serializer = PerevalSerializers()
+        self.serializer = LoadDataPerevalSerializer()
         super().__init__()
 
     class ResultCode(Enum):
@@ -50,44 +50,25 @@ class PerevalDataControl:
         """
         stream = io.BytesIO(bytes(self.data_in_raw))
         data = JSONParser().parse(stream)
-        serializer = PerevalSerializers(data=data)
-        logger_one.info(f'serialize {serializer.is_valid()}')
-        logger_one.info(f'serialize err {serializer.errors}')
-        logger_one.info(f'serialize vd {serializer.validated_data}')
-        if not serializer.is_valid():
+        self.serializer = LoadDataPerevalSerializer(data=data)
+        if not self.serializer.is_valid():
             self.status = self.ResultCode.BadRequest.value,
-            self.message = f"Bad Request. {serializer.errors}"
+            self.message = f"Bad Request. {self.serializer.errors}"
             self.new_id = 'null'
             return False
-        self.data_in_decoded = serializer.validated_data
+        self.data_in_decoded = self.serializer.validated_data
         return True
 
     def submit_data(self):
         """
         Записывает данные в базу
         """
-
-        new_pereval = PerevalAdded()
+        pereval_transform = self.serializer.save()
+        new_pereval = pereval_transform.to_model()
         new_pereval.row_data = self.serializer.data
         new_pereval.add_data = datetime.datetime.now()
-
-        sender = self.data_in_decoded['user']
-        new_pereval.tourist = self.find_or_create_tourist(sender)
-        new_pereval.beautyTitle = self.data_in_decoded['beauty_title']
-        new_pereval.title = self.data_in_decoded['title']
-        new_pereval.other_titles = self.data_in_decoded['other_titles']
-        new_pereval.connect = self.data_in_decoded['connect']
-        new_pereval.add_time = self.data_in_decoded['add_time']
-        coords = self.data_in_decoded['coords']
-        new_pereval.latitude = coords['latitude']
-        new_pereval.longitude = coords['longitude']
-        new_pereval.height = coords['height']
-        level = self.data_in_decoded['level']
-        new_pereval.winter_level = level['winter']
-        new_pereval.spring_level = level['spring']
-        new_pereval.summer_level = level['summer']
-        new_pereval.autumn_level = level['autumn']
         new_pereval.status = PerevalAdded.ModerationStatus.New.value
+        new_pereval.tourist = PerevalDataControl.find_or_create_tourist(new_pereval.user_data)
         new_pereval.save()
 
         self.save_images(new_pereval, self.data_in_decoded["images"])
@@ -98,7 +79,8 @@ class PerevalDataControl:
 
         return True
 
-    def find_or_create_tourist(self, sender: dict) -> Tourist:
+    @staticmethod
+    def find_or_create_tourist(sender: dict) -> Tourist:
         """
         Ищет туриста по email, если не находит, создает нового.
         """
@@ -115,7 +97,8 @@ class PerevalDataControl:
             tourist = found[0]
         return tourist
 
-    def save_images(self, pereval: PerevalAdded, images: list) -> None:
+    @staticmethod
+    def save_images(pereval: PerevalAdded, images: list) -> None:
         """
         Сохраняет изображения
         """
@@ -139,3 +122,18 @@ class PerevalDataControl:
         return {"status": self.status,
                 "message": self.message,
                 "id": self.new_id}
+
+    @staticmethod
+    def get_pereval_data(pereval_id: int) -> str:
+        """
+        Возвращает json представление о данных перевала по его id
+        """
+        found = PerevalAdded.objects.filter(pk=pereval_id)
+        if found.exists():
+            pereval_transform = PerevalTransform(pereval=found[0])
+            serializer = LoadDataPerevalSerializer(pereval_transform)
+            # logger_one.info(f'serializer {serializer.data}')
+            result = JSONRenderer().render(serializer.data)
+        else:
+            result = f'Pereval id {pereval_id} not found'
+        return result

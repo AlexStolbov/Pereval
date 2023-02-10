@@ -114,7 +114,7 @@ LOGGING = {
     'style': '{',
     'formatters': {
         'simple': {
-            'format': '{levelname} {message}',
+            'format': '{levelname} ({module})/({funcName}) {message}',
             'style': '{',
         },
     },

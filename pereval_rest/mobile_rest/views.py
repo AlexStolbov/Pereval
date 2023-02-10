@@ -12,7 +12,6 @@ def submit_data(request):
     Отправляет их на запись в базу.
     """
     if request.method == 'POST':
-        logger_one.info(f'request body {request.body}')
         data_control = PerevalDataControl(request.body)
         if data_control.check_data():
             data_control.submit_data()
@@ -21,3 +20,13 @@ def submit_data(request):
         result = {'result': 'method don"t support'}
 
     return HttpResponse(json.dumps(result))
+
+
+def send_data(request, *args, **kwargs):
+    """
+    Возвращает данные по id перевала
+    """
+    # logger_one.info(f'send_data args {args}')
+    data = PerevalDataControl.get_pereval_data(kwargs['id'])
+    # return HttpResponse(json.dumps(data))
+    return HttpResponse(data)

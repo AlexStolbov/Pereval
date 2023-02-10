@@ -18,5 +18,5 @@ from django.urls import path, include
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('submitData/', include('mobile_rest.urls'))
+    path('submitData/', include('mobile_rest.urls')),
 ]
