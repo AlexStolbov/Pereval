@@ -74,7 +74,15 @@ class Images(models.Model):
                                       related_name='images',
                                       on_delete=models.CASCADE)
     title = models.CharField(max_length=100, default='')
-    image = models.BinaryField()
+    _image = models.BinaryField(db_column='image')
+
+    @property
+    def image(self):
+        return bytes(self._image).decode()
+
+    @image.setter
+    def image(self, value):
+        self._image = value.encode()
 
     class Meta:
         ordering = ['title']

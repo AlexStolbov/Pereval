@@ -1,6 +1,9 @@
 import datetime
+import logging
 from rest_framework import serializers
 from .models import PerevalAdded, Images
+
+logger_one = logging.getLogger('debug_one')
 
 
 class LoadDataUserSerializer(serializers.Serializer):
@@ -75,11 +78,13 @@ class PerevalTransform:
         pereval - передаем, если хотим сериализовать
         **kwargs - передаст сериализатор при десереализации
         """
-        if kwargs:
-            pereval_data = kwargs
+        pereval_id = None
+        if pereval:
+            pereval_data = self._data_from_model(pereval)
+            pereval_id = pereval.id
         else:
-            pereval_data = self._from_model(pereval)
-            self.status = pereval_data['status']
+            pereval_data = kwargs
+        self.pereval_id = pereval_id
         self.beauty_title = pereval_data['beauty_title']
         self.title = pereval_data['title']
         self.other_titles = pereval_data['other_titles']
@@ -89,11 +94,13 @@ class PerevalTransform:
         self.coords = pereval_data['coords']
         self.level = pereval_data['level']
         self.images = pereval_data['images']
+        # status не передается снаружи
+        self.status = pereval_data.get('status', '')
 
     @staticmethod
-    def _from_model(pereval: PerevalAdded) -> dict:
+    def _data_from_model(pereval: PerevalAdded) -> dict:
         """"
-        По даннфм перевала, формирует словарь для заполнения полей этого объекта
+        По данным перевала, формирует словарь для заполнения полей этого объекта
         """
         tourist = pereval.tourist
         pereval_data = {'beauty_title': pereval.beautyTitle,
@@ -116,12 +123,16 @@ class PerevalTransform:
                         'images': [],
                         'status': pereval.status, }
         for image in Images.objects.filter(pereval_added=pereval):
+            # logger_one.info(f'image {type(image.image)}')
             pereval_data['images'].append(
                 {'data': image.image, 'title': image.title})
         return pereval_data
 
     def to_model(self) -> PerevalAdded:
-        new_pereval = PerevalAdded()
+        if self.pereval_id:
+            new_pereval = PerevalAdded.objects.get(pk=self.pereval_id)
+        else:
+            new_pereval = PerevalAdded()
         new_pereval.add_data = datetime.datetime.now()
 
         new_pereval.user_data = self.user

@@ -46,7 +46,7 @@ class PerevalDataControl:
 
     def check_data(self):
         """
-        Проверка наличия всех полей
+        Создает экземпляр сериализатора для проверки наличия полей
         """
         stream = io.BytesIO(bytes(self.data_in_raw))
         data = JSONParser().parse(stream)
@@ -64,12 +64,9 @@ class PerevalDataControl:
         Записывает данные в базу
         """
         pereval_transform = self.serializer.save()
-        new_pereval = pereval_transform.to_model()
-        new_pereval.row_data = self.serializer.data
-        new_pereval.add_data = datetime.datetime.now()
-        new_pereval.status = PerevalAdded.ModerationStatus.New.value
-        new_pereval.tourist = PerevalDataControl.find_or_create_tourist(new_pereval.user_data)
-        new_pereval.save()
+        new_pereval = self._pereval_save(
+            pereval_transform=pereval_transform,
+            patch=False)
 
         self.save_images(new_pereval, self.data_in_decoded["images"])
 
@@ -78,6 +75,60 @@ class PerevalDataControl:
         self.new_id = new_pereval.id
 
         return True
+
+    def patch_data(self, pereval_id: int):
+        """
+        Обновляет существующие данные перевала, если он не был модерирован.
+        Нельзя изменять ФИО, адрес почты, телефон.
+        """
+        state = 0
+        message = ""
+        found = PerevalAdded.objects.filter(pk=pereval_id)
+        if not found.exists():
+            message = f'pereval {pereval_id} not found'
+        else:
+            exists_pereval_transform = PerevalTransform(pereval=found[0])
+            if exists_pereval_transform.status != PerevalAdded.ModerationStatus.New.value:
+                message = f'pereval {pereval_id} not new'
+            else:
+                new_pereval_transform = self.serializer.save()
+                do_not_edit_fields = ['email',
+                                      'name',
+                                      'fam',
+                                      'otc',
+                                      'phone']
+                err_fields = []
+                for _field in do_not_edit_fields:
+                    # logger_one.info(f'patched_data {patched_pereval_transform}')
+                    if exists_pereval_transform.user[_field] != new_pereval_transform.user[_field]:
+                        err_fields.append(_field)
+                if err_fields:
+                    message = f'{err_fields} cannot be changed'
+                else:
+                    new_pereval_transform.pereval_id = exists_pereval_transform.pereval_id
+                    self._pereval_save(
+                        pereval_transform=new_pereval_transform,
+                        patch=True)
+                    state = 1
+        result = {'state': state,}
+        if state != 1:
+            result['message'] = message
+        return result
+
+    def _pereval_save(self,
+                      pereval_transform: PerevalTransform,
+                      patch: bool) -> PerevalAdded:
+        new_pereval = pereval_transform.to_model()
+        new_pereval.row_data = self.serializer.data
+        new_pereval.add_data = datetime.datetime.now()
+        if not patch:
+            new_pereval.status = PerevalAdded.ModerationStatus.New.value
+            new_pereval.tourist = PerevalDataControl.find_or_create_tourist(
+                new_pereval.user_data
+            )
+        new_pereval.save()
+        self.save_images(new_pereval, self.data_in_decoded["images"])
+        return new_pereval
 
     @staticmethod
     def find_or_create_tourist(sender: dict) -> Tourist:
@@ -106,13 +157,7 @@ class PerevalDataControl:
             new_image = Images()
             new_image.pereval_added = pereval
             new_image.title = image['title']
-            image_in = image['data']
-            # logger_one.info(f'save images {type(image_in)}')
-            if type(image_in) == str:
-                image_to_save = bytes(image_in, 'utf-8')
-            else:
-                image_to_save = image_in
-            new_image.image = image_to_save
+            new_image.image = image['data']
             new_image.save()
 
     def format_result(self) -> dict:
@@ -123,8 +168,7 @@ class PerevalDataControl:
                 "message": self.message,
                 "id": self.new_id}
 
-    @staticmethod
-    def get_pereval_data(pereval_id: int) -> str:
+    def get_pereval_data(self, pereval_id: int) -> bytes:
         """
         Возвращает json представление о данных перевала по его id
         """
@@ -137,3 +181,19 @@ class PerevalDataControl:
         else:
             result = f'Pereval id {pereval_id} not found'
         return result
+
+    def get_perevals_for_email(self, email: str):
+        """
+        Возвращает список перевалов для туриста с заданной эл. почтой.
+        """
+        found_tourist = Tourist.objects.filter(email=email)
+        if found_tourist.exists():
+            result = []
+            found_perevals = PerevalAdded.objects.filter(tourist=found_tourist[0])
+            for pereval in found_perevals:
+                result.append(self.get_pereval_data(pereval.id).decode())
+            return result
+        else:
+            result = {'message': f'tourist with {email} not found'}
+        return result
+
