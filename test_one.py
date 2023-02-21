@@ -32,7 +32,8 @@ transfer = json.dumps(payload)
 # r = requests.post('http://localhost:8000/submitData/', json=payload)
 
 # GET
-r = requests.get('http://localhost:8000/submitData/39')
+#r = requests.get('http://localhost:8000/submitData/371')
+
 # GET list
 email1 = 'ss@mm.com'
 email2 = 'qwerty@mail.ru'
@@ -42,7 +43,7 @@ email2 = 'qwerty@mail.ru'
 payload['coords']['latitude'] = str(random.randrange(1000))
 # payload['user']['name'] = 'any name'
 # print(payload)
-# r = requests.patch('http://localhost:8000/submitData/36/', json=payload)
+r = requests.patch('http://localhost:8000/submitData/36/', json=payload)
 
 print(f'headers: {r.headers}')
 # pprint.pprint(f'text: {json.loads(r.text)}')

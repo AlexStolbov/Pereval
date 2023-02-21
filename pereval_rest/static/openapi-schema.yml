@@ -1,0 +1,207 @@
+openapi: 3.0.2
+info:
+  title: 'Pereval'
+  version: '0.1'
+paths:
+  /submitData:
+    post:
+        operationId: createPereval
+        description: 'Create pereval'
+        parameters: [ ]
+        requestBody:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Pereval'
+        responses:
+          '200':
+            content:
+              application/json:
+                schema:
+                  type: object
+                  properties:
+                    status:
+                      type: integer
+                      examples: [200, 500]
+                    message:
+                      type: string
+                      examples: [null, 'Connect error']
+                    id:
+                      type: integer
+            description: ''
+        tags:
+          - post new pereval
+  /submitData/{id}:
+    patch:
+      operationId: perevalPatch
+      description: 'Edit pereval'
+      parameters:
+        - in: 'path'
+          name: 'id'
+          schema:
+            type: integer
+          required: true
+          description: 'ID of pereval'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Pereval'
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  state:
+                    type: integer
+                    example: 0
+                  message:
+                    type: string
+                    example: 'name can not be changed'
+          description: 'result'
+      tags:
+        - edit pereval
+    get:
+      operationId: perevalData
+      description: 'Data of pereval'
+      parameters:
+        - in: 'path'
+          name: 'id'
+          schema:
+            type: integer
+          required: true
+          description: 'ID of pereval'
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Pereval'
+          description: 'pereval data'
+        '204':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+          description: 'pereval not found'
+      tags:
+        - perevals by id
+  /submitData/:
+    get:
+      operationId: getPerevalOfTourist
+      description: 'Get tourist`s perevals'
+      parameters:
+        - in: 'query'
+          name: 'user__email'
+          schema:
+            type: string
+          required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Pereval'
+          description: ''
+      tags:
+        - pereval of tourtist
+components:
+  schemas:
+    Pereval:
+      type: object
+      properties:
+        beauty_title:
+          type: string
+          maxLength: 100
+          description: Вид маршрута
+          example: перевал
+        title:
+          type: string
+          maxLength: 100
+          description: Название перевала
+          example: Пхия
+        other_titles:
+          type: string
+          maxLength: 100
+          description: Дополнительно название
+          example: Триев
+        connect:
+          type: string
+          maxLength: 50
+          description: Что соединяет
+          example: долина
+        add_time:
+          type: string
+          maxLength: 20
+          description: Время добавления
+          example: 2021-09-22 13:18:13
+        user:
+          $ref: '#/components/schemas/User'
+        coords:
+          $ref: '#/components/schemas/Coords'
+        level:
+          $ref: '#/components/schemas/Level'
+        images:
+          $ref: '#/components/schemas/Images'
+    User:
+      type: object
+      properties:
+        email:
+          type: string
+          maxLength: 150
+          example: qwerty@mail.ru
+        fam:
+          type: string
+          example: Петров
+        name:
+          type: string
+          example: Петр
+        otc:
+          type: string
+          example: Петрович
+        phone:
+          type: string
+          example: +7 555 55 55
+    Coords:
+      type: object
+      properties:
+        latitude:
+          type: string
+          example: 45.3842
+        longitude:
+          type: string
+          example: 7.1525
+        height:
+          type: string
+          example: 1200
+    Level:
+      type: object
+      properties:
+        winter:
+          type: string
+          example: 2A
+        summer:
+          type: string
+          example: 1A
+        autumn:
+          type: string
+          example: 1A
+        spring:
+          type: string
+          example: 3A
+    Images:
+      type: array
+      items:
+        type: object
+        properties:
+          title:
+            type: string
+            example: Седловина
+          data:
+            type: string
+            example: x89504e470d0a1a0a0000000d49484452000

@@ -103,16 +103,14 @@ class PerevalDataControl:
                     if exists_pereval_transform.user[_field] != new_pereval_transform.user[_field]:
                         err_fields.append(_field)
                 if err_fields:
-                    message = f'{err_fields} cannot be changed'
+                    message = f'{err_fields} can not be changed'
                 else:
                     new_pereval_transform.pereval_id = exists_pereval_transform.pereval_id
                     self._pereval_save(
                         pereval_transform=new_pereval_transform,
                         patch=True)
                     state = 1
-        result = {'state': state,}
-        if state != 1:
-            result['message'] = message
+        result = {'state': state, 'message': message}
         return result
 
     def _pereval_save(self,
@@ -179,21 +177,21 @@ class PerevalDataControl:
             # logger_one.info(f'serializer {serializer.data}')
             result = JSONRenderer().render(serializer.data)
         else:
-            result = f'Pereval id {pereval_id} not found'
+            result = b''
         return result
 
-    def get_perevals_for_email(self, email: str):
+    def get_perevals_for_email(self, email: str) -> list:
         """
         Возвращает список перевалов для туриста с заданной эл. почтой.
         """
+        result = []
         found_tourist = Tourist.objects.filter(email=email)
         if found_tourist.exists():
-            result = []
             found_perevals = PerevalAdded.objects.filter(tourist=found_tourist[0])
             for pereval in found_perevals:
                 result.append(self.get_pereval_data(pereval.id).decode())
             return result
-        else:
-            result = {'message': f'tourist with {email} not found'}
+        # else:
+        #     result = {'message': f'tourist with {email} not found'}
         return result
 
